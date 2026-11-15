@@ -1,23 +1,57 @@
 package de.doday.backend.task;
 
-import java.time.LocalDate;
+import jakarta.validation.Valid;
+import java.net.URI;
 import java.util.List;
-
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-@Controller
+@RestController
+@RequestMapping("/api/tasks")
 public class TaskController {
 
-    @GetMapping(path = "/api/tasks")
-    public ResponseEntity<List<Task>> getTasks() {
-        final List<Task> tasks = List.of(
-                new Task(1L, "Konzept Modulprojekt abgeben", LocalDate.of(2026, 10, 12), Priority.MUST_DO, false),
-                new Task(2L, "Statistik: Übungsblatt lösen", LocalDate.of(2026, 10, 13), Priority.MUST_DO, false),
-                new Task(3L, "Controlling-Folien durchgehen", LocalDate.of(2026, 10, 14), Priority.NORMAL, false),
-                new Task(4L, "Wäsche waschen", LocalDate.of(2026, 10, 12), Priority.OPTIONAL, true)
-        );
-        return ResponseEntity.ok(tasks);
+    private final TaskService taskService;
+
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
+    }
+
+    @GetMapping
+    public List<Task> getAll() {
+        return taskService.findAll();
+    }
+
+    @GetMapping("/{id}")
+    public Task getOne(@PathVariable Long id) {
+        return taskService.findById(id);
+    }
+
+    @PostMapping
+    public ResponseEntity<Task> create(@Valid @RequestBody TaskRequest request) {
+        Task created = taskService.create(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(created.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(created);
+    }
+
+    @PutMapping("/{id}")
+    public Task update(@PathVariable Long id, @Valid @RequestBody TaskRequest request) {
+        return taskService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        taskService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
