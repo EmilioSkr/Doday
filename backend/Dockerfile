@@ -11,5 +11,5 @@ LABEL org.name="Doday"
 # Package stage
 #
 FROM eclipse-temurin:25-jdk-jammy
-COPY --from=build /home/gradle/src/build/libs/Doday app.jar
+COPY --from=build /home/gradle/src/build/libs/*.jar /app.jar
 ENTRYPOINT ["java","-jar","/app.jar"]
