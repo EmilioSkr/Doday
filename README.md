@@ -95,6 +95,14 @@ Einstellungen in `src/main/resources/application.properties`, per Umgebungsvaria
 
 Zugangsdaten gehören nicht in dieses Repository.
 
+## Deployment auf Render
+
+Den Backend-Webservice in Render als **Web Service** mit dem Verzeichnis `backend` als Root Directory anlegen und dort das Dockerfile verwenden. Spring Boot hört auf `PORT` (lokal standardmäßig `8080`) und bindet sich nicht nur an `localhost`.
+
+Die Standard-CORS-Origin-Liste erlaubt `http://localhost:5173` und `https://doday-frontend.onrender.com`. `CORS_ALLOWED_ORIGINS` kann in Render bei Bedarf überschrieben werden; dann beide Origins kommasepariert und ohne abschließenden Schrägstrich angeben.
+
+Im Frontend die öffentliche Backend-Service-URL aus Render als API-Basisadresse ohne zusätzlichen Pfad eintragen, z. B. `https://<dein-backend-service>.onrender.com`. Die Endpunkte beginnen direkt mit `/api/tasks` bzw. `/api/habits`; Render fügt keinen `/backend`-URL-Pfad hinzu.
+
 ## Projektstruktur
 
 ```
@@ -103,7 +111,7 @@ src/main/java/de/doday/backend/
   habit/     Gewohnheiten
   error/     Fehlerbehandlung (404 und 400 als JSON)
   config/    CORS für das Vue-Frontend
-src/test/    Tests der Services
+src/test/    Service- und API-Tests
 ```
 
 ## Häufige Probleme
