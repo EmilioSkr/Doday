@@ -28,6 +28,8 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+	// dependency for postgres
+    runtimeOnly 'org.postgresql:postgresql'
 }
 
 tasks.named('test') {
