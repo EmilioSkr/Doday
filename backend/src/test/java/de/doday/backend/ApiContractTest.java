@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
@@ -37,17 +38,19 @@ class ApiContractTest {
 
     @Test
     void taskEndpointsFollowTheJsonContract() throws Exception {
-        mockMvc.perform(get("/api/tasks"))
+        MvcResult list = mockMvc.perform(get("/api/tasks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").isNumber())
                 .andExpect(jsonPath("$[0].title").isString())
                 .andExpect(jsonPath("$[0].dueDate").value(LocalDate.now().toString()))
                 .andExpect(jsonPath("$[0].priority").value("MUST_DO"))
-                .andExpect(jsonPath("$[0].done").isBoolean());
+                .andExpect(jsonPath("$[0].done").isBoolean())
+                .andReturn();
 
-        mockMvc.perform(get("/api/tasks/1"))
+        Number firstId = JsonPath.read(list.getResponse().getContentAsString(), "$[0].id");
+        mockMvc.perform(get("/api/tasks/{id}", firstId.longValue()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").value(firstId.longValue()))
                 .andExpect(jsonPath("$.dueDate").value(LocalDate.now().toString()));
 
         MvcResult created = mockMvc.perform(post("/api/tasks")
@@ -85,15 +88,17 @@ class ApiContractTest {
 
     @Test
     void habitEndpointsFollowTheJsonContract() throws Exception {
-        mockMvc.perform(get("/api/habits"))
+        MvcResult list = mockMvc.perform(get("/api/habits"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").isNumber())
                 .andExpect(jsonPath("$[0].name").isString())
-                .andExpect(jsonPath("$[0].done").isBoolean());
+                .andExpect(jsonPath("$[0].done").isBoolean())
+                .andReturn();
 
-        mockMvc.perform(get("/api/habits/1"))
+        Number firstId = JsonPath.read(list.getResponse().getContentAsString(), "$[0].id");
+        mockMvc.perform(get("/api/habits/{id}", firstId.longValue()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(firstId.longValue()));
 
         MvcResult created = mockMvc.perform(post("/api/habits")
                         .contentType("application/json")

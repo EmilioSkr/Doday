@@ -9,10 +9,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
+@SpringBootTest
+@Transactional
 class TaskServiceTest {
 
-    private final TaskService service = new TaskService();
+    @Autowired
+    private TaskService service;
 
     @BeforeEach
     void printTestName(TestInfo info) {
@@ -38,12 +44,13 @@ class TaskServiceTest {
     @Test
     @DisplayName("Aufgabe erstellen: neue ID, Titel ohne Leerzeichen, nicht erledigt")
     void createAddsTaskWithNewIdAndNotDone() {
+        int before = service.findAll().size();
         TaskRequest request = new TaskRequest("  Test  ", LocalDate.of(2026, 11, 20), Priority.NORMAL, null);
 
         Task created = service.create(request);
 
-        show("ID der neuen Aufgabe", 7L, created.getId());
-        assertThat(created.getId()).as("ID der neuen Aufgabe").isEqualTo(7L);
+        show("ID der neuen Aufgabe", "nicht null", created.getId());
+        assertThat(created.getId()).as("ID der neuen Aufgabe").isNotNull();
 
         show("Titel (Leerzeichen entfernt)", "Test", created.getTitle());
         assertThat(created.getTitle()).as("Titel (Leerzeichen entfernt)").isEqualTo("Test");
@@ -51,16 +58,18 @@ class TaskServiceTest {
         show("done ohne Angabe", false, created.isDone());
         assertThat(created.isDone()).as("done ohne Angabe").isFalse();
 
-        show("Anzahl Aufgaben danach", 7, service.findAll().size());
-        assertThat(service.findAll()).as("Anzahl Aufgaben danach").hasSize(7);
+        show("Anzahl Aufgaben danach", before + 1, service.findAll().size());
+        assertThat(service.findAll()).as("Anzahl Aufgaben danach").hasSize(before + 1);
     }
 
     @Test
     @DisplayName("Aufgabe ändern: Felder ändern sich, done bleibt erhalten")
     void updateChangesFieldsAndKeepsDoneWhenMissing() {
+        // Die zweite Beispielaufgabe ("Wäsche waschen") ist schon erledigt
+        Task second = service.findAll().get(1);
         TaskRequest request = new TaskRequest("Neu", LocalDate.of(2026, 12, 1), Priority.OPTIONAL, null);
 
-        Task updated = service.update(2L, request);
+        Task updated = service.update(second.getId(), request);
 
         show("Titel", "Neu", updated.getTitle());
         assertThat(updated.getTitle()).as("Titel").isEqualTo("Neu");
@@ -68,7 +77,7 @@ class TaskServiceTest {
         show("Priorität", Priority.OPTIONAL, updated.getPriority());
         assertThat(updated.getPriority()).as("Priorität").isEqualTo(Priority.OPTIONAL);
 
-        // Aufgabe 2 war schon erledigt und bleibt es, weil done im Request fehlt
+        // Die Aufgabe war schon erledigt und bleibt es, weil done im Request fehlt
         show("done bleibt erhalten", true, updated.isDone());
         assertThat(updated.isDone()).as("done bleibt erhalten").isTrue();
     }
@@ -76,9 +85,10 @@ class TaskServiceTest {
     @Test
     @DisplayName("Aufgabe als erledigt markieren")
     void updateCanMarkTaskAsDone() {
+        Task first = service.findAll().get(0);
         TaskRequest request = new TaskRequest("Konzept", LocalDate.of(2026, 11, 20), Priority.MUST_DO, true);
 
-        Task updated = service.update(1L, request);
+        Task updated = service.update(first.getId(), request);
 
         show("done nach Update", true, updated.isDone());
         assertThat(updated.isDone()).as("done nach Update").isTrue();
@@ -87,13 +97,16 @@ class TaskServiceTest {
     @Test
     @DisplayName("Aufgabe löschen")
     void deleteRemovesTask() {
-        service.delete(1L);
+        int before = service.findAll().size();
+        Long id = service.findAll().get(0).getId();
+
+        service.delete(id);
 
         int actual = service.findAll().size();
-        show("Anzahl Aufgaben nach dem Löschen", 5, actual);
-        assertThat(actual).as("Anzahl Aufgaben nach dem Löschen").isEqualTo(5);
+        show("Anzahl Aufgaben nach dem Löschen", before - 1, actual);
+        assertThat(actual).as("Anzahl Aufgaben nach dem Löschen").isEqualTo(before - 1);
 
-        assertThatThrownBy(() -> service.findById(1L))
+        assertThatThrownBy(() -> service.findById(id))
                 .as("Gelöschte Aufgabe wird nicht mehr gefunden")
                 .isInstanceOf(NotFoundException.class);
     }

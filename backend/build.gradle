@@ -36,4 +36,7 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	environment 'DB_URL', 'jdbc:h2:mem:testdb'
+	environment 'DB_USER', 'sa'
+	environment 'DB_PASSWORD', ''
 }

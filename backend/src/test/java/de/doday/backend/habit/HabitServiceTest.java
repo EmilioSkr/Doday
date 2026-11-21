@@ -5,10 +5,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.doday.backend.error.NotFoundException;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
+@SpringBootTest
+@Transactional
 class HabitServiceTest {
 
-    private final HabitService service = new HabitService();
+    @Autowired
+    private HabitService service;
 
     /** Gibt erwartet und erhalten aus, auch wenn der Test besteht. */
     private static void show(String check, Object expected, Object actual) {
@@ -27,6 +33,8 @@ class HabitServiceTest {
 
     @Test
     void createAddsHabitNotDone() {
+        int before = service.findAll().size();
+
         Habit created = service.create(new HabitRequest(" Dehnen ", null));
 
         show("Name (Leerzeichen entfernt)", "Dehnen", created.getName());
@@ -35,13 +43,16 @@ class HabitServiceTest {
         show("done ohne Angabe", false, created.isDone());
         assertThat(created.isDone()).as("done ohne Angabe").isFalse();
 
-        show("Anzahl Gewohnheiten danach", 6, service.findAll().size());
-        assertThat(service.findAll()).as("Anzahl Gewohnheiten danach").hasSize(6);
+        show("Anzahl Gewohnheiten danach", before + 1, service.findAll().size());
+        assertThat(service.findAll()).as("Anzahl Gewohnheiten danach").hasSize(before + 1);
     }
 
     @Test
     void updateTogglesDone() {
-        Habit updated = service.update(4L, new HabitRequest("Vokabeln lernen", true));
+        // Die vierte Beispielgewohnheit ("Vokabeln lernen") ist noch nicht erledigt
+        Habit fourth = service.findAll().get(3);
+
+        Habit updated = service.update(fourth.getId(), new HabitRequest("Vokabeln lernen", true));
 
         show("done nach Update", true, updated.isDone());
         assertThat(updated.isDone()).as("done nach Update").isTrue();
@@ -49,9 +60,11 @@ class HabitServiceTest {
 
     @Test
     void deleteRemovesHabit() {
-        service.delete(1L);
+        Long id = service.findAll().get(0).getId();
 
-        assertThatThrownBy(() -> service.findById(1L))
+        service.delete(id);
+
+        assertThatThrownBy(() -> service.findById(id))
                 .as("Gelöschte Gewohnheit wird nicht mehr gefunden")
                 .isInstanceOf(NotFoundException.class);
     }
