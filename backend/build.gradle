@@ -30,6 +30,8 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	// dependency for postgres
     runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {
